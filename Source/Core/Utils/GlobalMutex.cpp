@@ -2,7 +2,7 @@
 
     Image Uploader -  free application for uploading images/files to the Internet
 
-    Copyright 2007-2015 Sergey Svistunov (zenden2k@gmail.com)
+    Copyright 2007-2018 Sergey Svistunov (zenden2k@yandex.ru)
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -19,33 +19,9 @@
 */
 
 #include "GlobalMutex.h"
-#include <windows.h>
 
-namespace IuCoreUtils {
-
-ZGlobalMutex::ZGlobalMutex(const std::string& name)
-{
-	m_data = ::CreateMutexA(NULL, TRUE, name.c_str());
-	if (!m_data && GetLastError() == ERROR_ALREADY_EXISTS)
-	{
-		m_data = OpenMutexA(0, 0, name.c_str());
-	}
-	lock();
-}
-
-void ZGlobalMutex::lock()
-{
-	WaitForSingleObject(m_data, INFINITE);
-}
-
-void ZGlobalMutex::unlock()
-{
-	ReleaseMutex(reinterpret_cast<HANDLE>(m_data));
-}
-
-ZGlobalMutex::~ZGlobalMutex()
-{
-	unlock();
-	CloseHandle(reinterpret_cast<HANDLE>(m_data));
-}
-}
+#ifdef _WIN32
+#include "GlobalMutex_win.h"
+#else
+#include "GlobalMutex_unix.h"
+#endif

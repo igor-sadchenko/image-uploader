@@ -2,7 +2,7 @@
 
     Image Uploader -  free application for uploading images/files to the Internet
 
-    Copyright 2007-2015 Sergey Svistunov (zenden2k@gmail.com)
+    Copyright 2007-2018 Sergey Svistunov (zenden2k@yandex.ru)
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -31,32 +31,34 @@
 // CVideoGrabberParams
 
 class CVideoGrabberParams : 
-	public CDialogImpl<CVideoGrabberParams>, public CSettingsPage	
+    public CDialogImpl<CVideoGrabberParams>, public CSettingsPage    
 {
 public:
-	CVideoGrabberParams();
-	~CVideoGrabberParams();
-	enum { IDD = IDD_VIDEOGRABBERPARARAMS};
+    CVideoGrabberParams();
+    ~CVideoGrabberParams();
+    enum { IDD = IDD_VIDEOGRABBERPARARAMS};
 
     BEGIN_MSG_MAP(CVideoGrabberParams)
-		MESSAGE_HANDLER(WM_INITDIALOG, OnInitDialog)
-		COMMAND_ID_HANDLER_EX(IDC_MEDIAINFOFONT, OnMediaInfoFontClicked)
-		COMMAND_HANDLER(IDC_MEDIAINFOONIMAGE,BN_CLICKED, OnShowMediaInfoTextBnClicked)
-		COMMAND_HANDLER(IDC_VIDEOSNAPSHOTSFOLDERBUTTON, BN_CLICKED, OnVideoSnapshotsFolderButtonClicked);
-		REFLECT_NOTIFICATIONS()
-	END_MSG_MAP()
+        MESSAGE_HANDLER(WM_INITDIALOG, OnInitDialog)
+        COMMAND_ID_HANDLER_EX(IDC_MEDIAINFOFONT, OnMediaInfoFontClicked)
+        COMMAND_HANDLER(IDC_MEDIAINFOONIMAGE,BN_CLICKED, OnShowMediaInfoTextBnClicked)
+        COMMAND_HANDLER(IDC_VIDEOSNAPSHOTSFOLDERBUTTON, BN_CLICKED, OnVideoSnapshotsFolderButtonClicked);
+        REFLECT_NOTIFICATIONS()
+    END_MSG_MAP()
     // Handler prototypes:
     //  LRESULT MessageHandler(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled);
     //  LRESULT CommandHandler(WORD wNotifyCode, WORD wID, HWND hWndCtl, BOOL& bHandled);
     //  LRESULT NotifyHandler(int idCtrl, LPNMHDR pnmh, BOOL& bHandled);
-	LRESULT OnInitDialog(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled);
-	//CSavingOptions *so;
-	bool Apply();
-	LOGFONT m_Font;
-	CColorButton Color1;
-	LRESULT OnMediaInfoFontClicked(WORD wNotifyCode, WORD wID, HWND hWndCtl);
-	LRESULT OnShowMediaInfoTextBnClicked(WORD wNotifyCode, WORD wID, HWND hWndCtl, BOOL& bHandled);
-	LRESULT OnVideoSnapshotsFolderButtonClicked(WORD wNotifyCode, WORD wID, HWND hWndCtl, BOOL& bHandled);
+    LRESULT OnInitDialog(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled);
+    //CSavingOptions *so;
+    bool Apply() override;
+    LOGFONT m_Font;
+    CColorButton Color1;
+    LRESULT OnMediaInfoFontClicked(WORD wNotifyCode, WORD wID, HWND hWndCtl);
+    LRESULT OnShowMediaInfoTextBnClicked(WORD wNotifyCode, WORD wID, HWND hWndCtl, BOOL& bHandled);
+    LRESULT OnVideoSnapshotsFolderButtonClicked(WORD wNotifyCode, WORD wID, HWND hWndCtl, BOOL& bHandled);
+protected:
+    void CheckBounds(int controlId, int minValue, int maxValue, int labelId = -1);
 };
 
 

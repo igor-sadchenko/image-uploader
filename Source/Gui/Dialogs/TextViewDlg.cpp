@@ -2,7 +2,7 @@
 
     Image Uploader -  free application for uploading images/files to the Internet
 
-    Copyright 2007-2015 Sergey Svistunov (zenden2k@gmail.com)
+    Copyright 2007-2018 Sergey Svistunov (zenden2k@yandex.ru)
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -23,12 +23,12 @@
 // CTextViewDlg
 CTextViewDlg::CTextViewDlg(const CString &text, const CString &title, const CString &info, const CString &question , const CString &okCaption,const CString &cancelCaption)
 {
-	m_text = text;
-	m_okCaption = okCaption;
-	m_cancelCaption = cancelCaption;
-	m_question = question;
-	m_info = info;
-	m_title = title;
+    m_text = text;
+    m_okCaption = okCaption;
+    m_cancelCaption = cancelCaption;
+    m_question = question;
+    m_info = info;
+    m_title = title;
 }
 
 CTextViewDlg::~CTextViewDlg()
@@ -37,31 +37,31 @@ CTextViewDlg::~CTextViewDlg()
 
 LRESULT CTextViewDlg::OnInitDialog(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled)
 {
-	DlgResize_Init();
-	CenterWindow(GetParent());
-	SetDlgItemText(IDOK, m_okCaption);
-	SetDlgItemText(IDCANCEL, m_cancelCaption);
-	SetDlgItemText(IDC_TEXTEDIT, m_text);
-	SetDlgItemText(IDC_QUESTIONLABEL, m_question);
-	SetDlgItemText(IDC_TITLETEXT,m_info);
-	SetWindowText(m_title);
-	return 1;  // Let the system set the focus
+    DlgResize_Init();
+    CenterWindow(GetParent());
+    SetDlgItemText(IDOK, m_okCaption);
+    SetDlgItemText(IDCANCEL, m_cancelCaption);
+    SetDlgItemText(IDC_TEXTEDIT, m_text);
+    SetDlgItemText(IDC_QUESTIONLABEL, m_question);
+    SetDlgItemText(IDC_TITLETEXT,m_info);
+    SetWindowText(m_title);
+    return 1;  // Let the system set the focus
 }
 
 LRESULT CTextViewDlg::OnClickedOK(WORD wNotifyCode, WORD wID, HWND hWndCtl, BOOL& bHandled)
 {
-	EndDialog(IDCANCEL);
-	return 0;
+    EndDialog(IDCANCEL);
+    return 0;
 }
 
 LRESULT CTextViewDlg::OnClickedCancel(WORD wNotifyCode, WORD wID, HWND hWndCtl, BOOL& bHandled)
 {
-	EndDialog(IDCANCEL);
-	return 0;
+    EndDialog(IDCANCEL);
+    return 0;
 }
 
 LRESULT CTextViewDlg::OnClickedSave(WORD wNotifyCode, WORD wID, HWND hWndCtl, BOOL& bHandled)
 {
-	EndDialog(IDOK);
-	return 0;
+    EndDialog(IDOK);
+    return 0;
 }

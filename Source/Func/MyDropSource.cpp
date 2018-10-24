@@ -2,7 +2,7 @@
 
     Image Uploader -  free application for uploading images/files to the Internet
 
-    Copyright 2007-2015 Sergey Svistunov (zenden2k@gmail.com)
+    Copyright 2007-2018 Sergey Svistunov (zenden2k@yandex.ru)
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@
 
 CMyDropSource::CMyDropSource()
 {
-	m_lRefCount = 1;
+    m_lRefCount = 1;
 }
 
 CMyDropSource::~CMyDropSource()
@@ -54,26 +54,26 @@ ULONG __stdcall CMyDropSource::AddRef()
 ULONG __stdcall CMyDropSource::Release()
 {
     // Decrement object reference count.
-	LONG lCount = InterlockedDecrement(&m_lRefCount);
-		
-	if (lCount == 0)
-	{
-		delete this;
-		return 0;
-	}
-	else
-	{
-		return lCount;
-	}
+    LONG lCount = InterlockedDecrement(&m_lRefCount);
+        
+    if (lCount == 0)
+    {
+        delete this;
+        return 0;
+    }
+    else
+    {
+        return lCount;
+    }
 }
 
 HRESULT __stdcall CMyDropSource::QueryContinueDrag(BOOL fEscapePressed,DWORD grfKeyState)
 {
-	// If the escape key has been pressed we cancel the operation.
-    if (fEscapePressed == TRUE)
+    // If the escape key has been pressed we cancel the operation.
+    if (fEscapePressed != FALSE)
         return DRAGDROP_S_CANCEL;
 
-	// If the left button has been released we should drop.
+    // If the left button has been released we should drop.
     if ((grfKeyState & MK_LBUTTON) == 0)
         return DRAGDROP_S_DROP;
 

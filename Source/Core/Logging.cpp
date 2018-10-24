@@ -1,7 +1,7 @@
 /*
      Image Uploader - program for uploading images/files to the Internet
 
-     Copyright 2007-2015 Sergey Svistunov (zenden2k@gmail.com)
+     Copyright 2007-2018 Sergey Svistunov (zenden2k@yandex.ru)
 
      Licensed under the Apache License, Version 2.0 (the "License");
      you may not use this file except in compliance with the License.
@@ -17,25 +17,25 @@
 */
 
 #include "logging.h"
-#include <Core/Utils/CoreUtils.h>
+#include "Core/Utils/CoreUtils.h"
 
 std::ostream& operator<<(std::ostream& out, const wchar_t* str) {
-	std::string msg = IuCoreUtils::WstringToUtf8(str);
-	out << msg;
-	return out; 
+    std::string msg = IuCoreUtils::WstringToUtf8(str);
+    out << msg;
+    return out; 
 }
 
 std::ostream& operator<<(std::ostream& out, const std::wstring& str) {
-	std::string msg = IuCoreUtils::WstringToUtf8(str);
-	
-	return operator<<(out, msg);
+    std::string msg = IuCoreUtils::WstringToUtf8(str);
+    
+    return operator<<(out, msg);
 }
 
 #ifdef _WIN32
 std::ostream& operator<<(std::ostream& out, RECT rc) {
-	char buffer[100];
-	sprintf(buffer, "%d %d %d %d", rc.top, rc.left, rc.right - rc.left, rc.bottom - rc.top);
-	return operator<<(out, buffer); ;
+    char buffer[100];
+    sprintf(buffer, "%d %d %d %d", rc.top, rc.left, rc.right - rc.left, rc.bottom - rc.top);
+    return operator<<(out, buffer);
 }
 
 #endif

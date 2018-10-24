@@ -2,7 +2,7 @@
 
     Image Uploader -  free application for uploading images/files to the Internet
 
-    Copyright 2007-2015 Sergey Svistunov (zenden2k@gmail.com)
+    Copyright 2007-2018 Sergey Svistunov (zenden2k@yandex.ru)
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -22,19 +22,23 @@
 #define IU_GLOBALMUTEX_H
 
 #include <string>
+#include "CoreTypes.h"
 
-namespace IuCoreUtils
-{
-	class ZGlobalMutex
-	{
-		public:
-			ZGlobalMutex(const std::string &name);
-			void lock();
-			void unlock();
-			virtual ~ZGlobalMutex();
-		private:
-			void* m_data;
-	};
+namespace IuCoreUtils {
+
+class ZGlobalMutexPrivate;
+
+class ZGlobalMutex {
+public:
+    explicit ZGlobalMutex(const std::string& name);
+    void lock();
+    void unlock();
+    virtual ~ZGlobalMutex();
+private:
+    DISALLOW_COPY_AND_ASSIGN(ZGlobalMutex);
+    ZGlobalMutexPrivate* d_ptr;
+    void* m_data;
+};
 }
 
 #endif

@@ -1,7 +1,7 @@
 /*
      Image Uploader - program for uploading images/files to the Internet
 
-     Copyright 2007-2015 Sergey Svistunov (zenden2k@gmail.com)
+     Copyright 2007-2018 Sergey Svistunov (zenden2k@yandex.ru)
 
      Licensed under the Apache License, Version 2.0 (the "License");
      you may not use this file except in compliance with the License.
@@ -22,25 +22,23 @@
 #include "../Document.h"
 #include "../MovableElements.h"
 
-#include <Core/Utils/CoreUtils.h>
-#include <Core/Logging.h>
+#include "Core/Utils/CoreUtils.h"
+#include "Core/Logging.h"
 
-#include <math.h>
+#include <cmath>
 #include <cassert>
-#include <3rdpart/GdiplusH.h>
-#include <math.h>
+#include "3rdpart/GdiplusH.h"
 
 namespace ImageEditor {
 
 VectorElementTool::VectorElementTool( Canvas* canvas, ElementType type ) : MoveAndResizeTool( canvas, type ) {
-	currentElement_       = NULL;
-	allowMovingElements_ = false;
+    currentElement_       = NULL;
+    allowMovingElements_ = false;
 }
-
 
 ImageEditor::CursorType VectorElementTool::getCursor(int x, int y)
 {
-	return ctCross;
+    return ctCross;
 }
 
 }

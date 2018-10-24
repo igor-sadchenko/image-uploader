@@ -2,7 +2,7 @@
 
     Image Uploader -  free application for uploading images/files to the Internet
 
-    Copyright 2007-2015 Sergey Svistunov (zenden2k@gmail.com)
+    Copyright 2007-2018 Sergey Svistunov (zenden2k@yandex.ru)
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -21,25 +21,24 @@
 #ifndef IU_CORE_UTILS_CRYPTOUTILS_H
 #define IU_CORE_UTILS_CRYPTOUTILS_H
 
-#include <cstdio>
 #include <string>
-#include <vector>
-#include "CoreTypes.h"
 
 namespace IuCoreUtils {
 
-class CryptoUtils {
-	public:
-		static const std::string CalcMD5Hash(const void* data, size_t size);
-		static const std::string CalcMD5HashFromString(const std::string &data);
-		static const std::string CalcMD5HashFromFile(const std::string& filename);
+namespace CryptoUtils {
+    const std::string CalcMD5Hash(const void* data, size_t size);
+    const std::string CalcMD5HashFromString(const std::string &data);
+    const std::string CalcMD5HashFromFile(const std::string& filename);
 
-		static const std::string CalcSHA1Hash(const void* data, size_t size);
-		static const std::string CalcSHA1HashFromString(const std::string& data);
-		static const std::string CalcSHA1HashFromFile(const std::string& filename);
+    const std::string CalcSHA1Hash(const void* data, size_t size);
+    const std::string CalcSHA1HashFromString(const std::string& data);
+    const std::string CalcSHA1HashFromFile(const std::string& filename);
 
-		static const std::string CalcHMACSHA1Hash(const std::string& key, const void* data, size_t size, bool base64);
-		static const std::string CalcHMACSHA1HashFromString(const std::string& key, const std::string& data, bool base64);
+    const std::string CalcHMACSHA1Hash(const std::string& key, const void* data, size_t size, bool base64);
+    const std::string CalcHMACSHA1HashFromString(const std::string& key, const std::string& data, bool base64);
+    std::string Base64Encode(const std::string& data);
+    std::string Base64Decode(const std::string& data);
+
 };
 
 };

@@ -2,7 +2,7 @@
 
     Image Uploader -  free application for uploading images/files to the Internet
 
-    Copyright 2007-2015 Sergey Svistunov (zenden2k@gmail.com)
+    Copyright 2007-2018 Sergey Svistunov (zenden2k@yandex.ru)
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -18,237 +18,226 @@
 
 */
 #include "ShortenUrlDlg.h"
-#include "atlheaders.h"
+
 #include "Func/Common.h"
-#include "Core/3rdpart/pcreplusplus.h"
-#include "LogWindow.h"
-#include "Func/Settings.h"
+#include "Core/Settings.h"
 #include "Gui/GuiTools.h"
-#include <Core/Upload/FileQueueUploader.h>
-#include <Core/Upload/UrlShorteningTask.h>
-#include <Func/WinUtils.h>
-#include <Wininet.h>
-#include <Func/WebUtils.h>
+#include "Core/Upload/FileQueueUploader.h"
+#include "Core/Upload/UrlShorteningTask.h"
+#include "Func/WinUtils.h"
+#include "Core/CommonDefs.h"
+#include "Func/WebUtils.h"
+#include "Core/Upload/UploadManager.h"
+#include "Core/CoreFunctions.h"
+#include "Core/ServiceLocator.h"
+#include "Gui/Controls/ServerSelectorControl.h"
 
 // CShortenUrlDlg
-CShortenUrlDlg::CShortenUrlDlg(CWizardDlg *wizardDlg,CMyEngineList * engineList, const CString &initialBuffer)
+CShortenUrlDlg::CShortenUrlDlg(CWizardDlg *wizardDlg, UploadManager* uploadManager, UploadEngineManager* uploadEngineManager, const CString &initialBuffer)
 {
-	m_WizardDlg = wizardDlg;
-	m_InitialBuffer = initialBuffer;
-	queueUploader_ = new CFileQueueUploader();
-	queueUploader_->setCallback( this );
-	engineList_ = engineList;
-	serverId_ = engineList_->GetUploadEngineIndex(_T("Local Shorten server"));
-	backgroundBrush_.CreateSysColorBrush(COLOR_BTNFACE);
-	//serverId_ = engineList_->GetUploadEngineIndex(_T("clck.ru"));
+    m_WizardDlg = wizardDlg;
+    m_InitialBuffer = initialBuffer;
+    backgroundBrush_.CreateSysColorBrush(COLOR_BTNFACE);
+    uploadManager_ = uploadManager;
+    uploadEngineManager_ = uploadEngineManager;
 }
 
 
 CShortenUrlDlg::~CShortenUrlDlg()
 {
-	delete queueUploader_;
 }
 
 LRESULT CShortenUrlDlg::OnInitDialog(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled)
 {
-	CenterWindow(GetParent());
-	PrevClipboardViewer = SetClipboardViewer();
-	DlgResize_Init(false, true, 0); // resizable dialog without "griper"
+    CenterWindow(GetParent());
+    PrevClipboardViewer = SetClipboardViewer();
+    DlgResize_Init(false, true, 0); // resizable dialog without "griper"
  
-	::SetFocus(GetDlgItem(IDOK));
-	SetWindowText(TR("Сокращение ссылок"));
-	TRC(IDOK, "Сократить");
-	TRC(IDCANCEL, "Закрыть");
-	TRC(IDC_SHORTENURLTIP, "Введите URL:");
-	GuiTools::MakeLabelBold(GetDlgItem(IDC_RESULTSLABEL));
+    ::SetFocus(GetDlgItem(IDOK));
+    SetWindowText(TR("Url Shortener"));
+    TRC(IDOK, "Shorten");
+    TRC(IDCANCEL, "Close");
+    TRC(IDC_SHORTENURLTIP, "Paste a link to shorten it:");
+    GuiTools::MakeLabelBold(GetDlgItem(IDC_RESULTSLABEL));
 
-	::ShowWindow(GetDlgItem(IDC_DOWNLOADFILESPROGRESS), SW_HIDE);
-	HWND hWnd = GetDlgItem(IDC_ANIMATIONSTATIC);
-	if (hWnd) {
-		wndAnimation_.SubclassWindow(hWnd);
-		if (wndAnimation_.Load(MAKEINTRESOURCE(IDR_PROGRESSGIF), _T("GIF")))
-			wndAnimation_.Draw();
-		wndAnimation_.ShowWindow(SW_HIDE);
-	}
-	outputEditControl_.AttachToDlgItem(m_hWnd, IDC_RESULTSEDIT);
+    ::ShowWindow(GetDlgItem(IDC_DOWNLOADFILESPROGRESS), SW_HIDE);
+    HWND hWnd = GetDlgItem(IDC_ANIMATIONSTATIC);
+    if (hWnd) {
+        wndAnimation_.SubclassWindow(hWnd);
+        if (wndAnimation_.Load(MAKEINTRESOURCE(IDR_PROGRESSGIF), _T("GIF")))
+            wndAnimation_.Draw();
+        wndAnimation_.ShowWindow(SW_HIDE);
+    }
+    outputEditControl_.AttachToDlgItem(m_hWnd, IDC_RESULTSEDIT);
 
-	CUploadEngineData *uploadEngine = _EngineList->byIndex( serverId_ );
-	std::string selectedServerName = Settings.urlShorteningServer.uploadEngineData()->Name;
-	int selectedIndex = 0;
+    CRect serverSelectorRect = GuiTools::GetDialogItemRect(m_hWnd, IDC_SHORTENINGSERVERPLACEHOLDER);
 
-	for( int i = 0; i < engineList_->count(); i++) {	
-		CUploadEngineData * ue = _EngineList->byIndex( i ); 
-		
-		char *serverName = new char[ue->Name.length() + 1];
-		lstrcpyA( serverName, ue->Name.c_str() );
-		if ( ue->Type ==  CUploadEngineData::TypeUrlShorteningServer ) {
-			int itemIndex = SendDlgItemMessage(IDC_SERVERCOMBOBOX, CB_ADDSTRING, 0, (LPARAM)(LPCTSTR)Utf8ToWCstring( ue->Name ));
-			if ( ue->Name == selectedServerName ){
-				selectedIndex = itemIndex;
-			}
-			servers_.push_back(ue);
-		}
-	}
+    urlShortenerServerSelector_.reset(new CServerSelectorControl(uploadEngineManager_));
+    urlShortenerServerSelector_->setServersMask(CServerSelectorControl::smUrlShorteners);
+    urlShortenerServerSelector_->setShowImageProcessingParams(false);
+    urlShortenerServerSelector_->setShowParamsLink(false);
+    urlShortenerServerSelector_->Create(m_hWnd, serverSelectorRect);
+    urlShortenerServerSelector_->ShowWindow(SW_SHOW);
+    urlShortenerServerSelector_->SetWindowPos(0, serverSelectorRect.left, serverSelectorRect.top, serverSelectorRect.right - serverSelectorRect.left, serverSelectorRect.bottom - serverSelectorRect.top, 0);
+    urlShortenerServerSelector_->setServerProfile(Settings.urlShorteningServer);
+    urlShortenerServerSelector_->setTitle(TR("URL shortening server"));
 
-	SendDlgItemMessage(IDC_SERVERCOMBOBOX, CB_SETCURSEL, selectedIndex, 0);
+    if(!m_InitialBuffer.IsEmpty())
+    {
+        ParseBuffer(m_InitialBuffer);
+        //BeginDownloading(); 
+    }
 
-	if(!m_InitialBuffer.IsEmpty())
-	{
-		ParseBuffer(m_InitialBuffer);
-		//BeginDownloading(); 
-	}
-
-	CString clipboardText;
-	WinUtils::GetClipboardText(clipboardText);
-	if ( !clipboardText.IsEmpty() ) {
-		ParseBuffer(clipboardText);
-	}
-	::SetFocus(GetDlgItem(IDC_INPUTEDIT));
-	return 0; 
+    CString clipboardText;
+    WinUtils::GetClipboardText(clipboardText);
+    if ( !clipboardText.IsEmpty() ) {
+        ParseBuffer(clipboardText);
+    }
+    ::SetFocus(GetDlgItem(IDC_INPUTEDIT));
+    return 0; 
 }
 
 
 LRESULT CShortenUrlDlg::OnClickedOK(WORD wNotifyCode, WORD wID, HWND hWndCtl, BOOL& bHandled)
-{	
-	CString url = GuiTools::GetDlgItemText(m_hWnd, IDC_INPUTEDIT);
-	if ( url.IsEmpty() ) {
-		return 0;
-	}
-	StartProcess();
-	//BeginDownloading();
-	return 0;
+{    
+    CString url = GuiTools::GetDlgItemText(m_hWnd, IDC_INPUTEDIT);
+    if ( url.IsEmpty() ) {
+        MessageBox(TR("Please enter an URL"), TR("Error"), MB_ICONERROR);
+        return 0;
+    }
+    
+    if (urlShortenerServerSelector_->serverProfile().serverName().empty()) {
+        MessageBox(TR("You have not selected server"), TR("Error"), MB_ICONERROR);
+        return 0;
+    } else if (!urlShortenerServerSelector_->isAccountChosen()) {
+            CString message;
+            message.Format(TR("You have not selected account for server \"%s\""), IuCoreUtils::Utf8ToWstring(urlShortenerServerSelector_->serverProfile().serverName()).c_str());
+            MessageBox(message, TR("Error"), MB_ICONERROR);
+            return 0;
+    } 
+    
+    StartProcess();
+    //BeginDownloading();
+    return 0;
 }
 
 LRESULT CShortenUrlDlg::OnClickedCancel(WORD wNotifyCode, WORD wID, HWND hWndCtl, BOOL& bHandled)
 {
-	if ( queueUploader_->IsRunning() ) {
-		queueUploader_->stop();
-		return 0;
-	}
-	/*if(m_FileDownloader.IsRunning()) 
-		m_FileDownloader.stop();
-	else
-	{
-		Settings.WatchClipboard = SendDlgItemMessage(IDC_WATCHCLIPBOARD, BM_GETCHECK) != 0;
-		EndDialog(wID);
-	}*/
-	OnClose();
-	EndDialog(wID);
-	return 0;
+    if ( uploadManager_->IsRunning() ) {
+        uploadManager_->stop();
+        return 0;
+    }
+    /*if(m_FileDownloader.IsRunning()) 
+        m_FileDownloader.stop();
+    else
+    {
+        Settings.WatchClipboard = SendDlgItemMessage(IDC_WATCHCLIPBOARD, BM_GETCHECK) != 0;
+        EndDialog(wID);
+    }*/
+    OnClose();
+    EndDialog(wID);
+    return 0;
 }
 
 LRESULT CShortenUrlDlg::OnChangeCbChain(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled)
 {
-	HWND hwndRemove = (HWND) wParam;  // handle of window being removed 
-	HWND hwndNext = (HWND) lParam;
+    HWND hwndRemove = reinterpret_cast<HWND>(wParam);  // handle of window being removed 
+    HWND hwndNext = reinterpret_cast<HWND>(lParam);
 
-	if(hwndRemove == PrevClipboardViewer) PrevClipboardViewer = hwndNext;
-	else ::SendMessage(PrevClipboardViewer, WM_CHANGECBCHAIN, wParam, lParam);
-	return 0;
+    if(hwndRemove == PrevClipboardViewer) PrevClipboardViewer = hwndNext;
+    else ::SendMessage(PrevClipboardViewer, WM_CHANGECBCHAIN, wParam, lParam);
+    return 0;
 }
 
 void CShortenUrlDlg::OnDrawClipboard()
 {
-	bool IsClipboard = IsClipboardFormatAvailable(CF_TEXT)!=0;
+    bool IsClipboard = IsClipboardFormatAvailable(CF_TEXT)!=0;
 
-	if(IsClipboard && SendDlgItemMessage(IDC_WATCHCLIPBOARD,BM_GETCHECK)==BST_CHECKED && !m_FileDownloader.IsRunning()	)
-	{
-		CString str;  
-		IU_GetClipboardText(str);
-		//ParseBuffer(str, true);
-		
-	}
-	//Sending WM_DRAWCLIPBOARD msg to the next window in the chain
-	if(PrevClipboardViewer) ::SendMessage(PrevClipboardViewer, WM_DRAWCLIPBOARD, 0, 0); 
+    if(IsClipboard && SendDlgItemMessage(IDC_WATCHCLIPBOARD,BM_GETCHECK)==BST_CHECKED && !m_FileDownloader.isRunning()    )
+    {
+        CString str;
+        WinUtils::GetClipboardText(str);
+        //ParseBuffer(str, true);
+        
+    }
+    //Sending WM_DRAWCLIPBOARD msg to the next window in the chain
+    if(PrevClipboardViewer) ::SendMessage(PrevClipboardViewer, WM_DRAWCLIPBOARD, 0, 0); 
 }
 
 LRESULT CShortenUrlDlg::OnDestroy(UINT uMsg, WPARAM wParam, LPARAM lParam, BOOL& bHandled)
 {
-	ChangeClipboardChain(PrevClipboardViewer);
-	return 0;
+    ChangeClipboardChain(PrevClipboardViewer);
+    return 0;
 }
 
 bool CShortenUrlDlg::StartProcess() {
-	int selectedIndex = SendDlgItemMessage(IDC_SERVERCOMBOBOX, CB_GETCURSEL, 0, 0);
-	if ( selectedIndex < 0 ) {
-		return false;
-	}
-	::ShowWindow(GetDlgItem(IDC_RESULTSLABEL), SW_SHOW);
-	GuiTools::EnableDialogItem(m_hWnd, IDOK, false);
-	wndAnimation_.ShowWindow(SW_SHOW);
-	CString url = GuiTools::GetDlgItemText(m_hWnd, IDC_INPUTEDIT);
+    ServerProfile profile = urlShortenerServerSelector_->serverProfile();
+    if (profile.isNull()) {
+        return false;
+    }
+    profile.setShortenLinks(false);
+    ::ShowWindow(GetDlgItem(IDC_RESULTSLABEL), SW_SHOW);
+    GuiTools::EnableDialogItem(m_hWnd, IDOK, false);
+    wndAnimation_.ShowWindow(SW_SHOW);
+    CString url = GuiTools::GetDlgItemText(m_hWnd, IDC_INPUTEDIT);
 
-	std_tr::shared_ptr<UrlShorteningTask> task(new UrlShorteningTask(WCstringToUtf8(url)));
+    std::shared_ptr<UrlShorteningTask> task(new UrlShorteningTask(WCstringToUtf8(url)));
+    
+    task->setServerProfile(profile);
+    task->addTaskFinishedCallback(UploadTask::TaskFinishedCallback(this, &CShortenUrlDlg::OnFileFinished));
+    std::shared_ptr<UploadSession> session(new UploadSession());
+    session->addTask(task);
+    session->addSessionFinishedCallback(UploadSession::SessionFinishedCallback(this, &CShortenUrlDlg::OnQueueFinished));
+    uploadManager_->addSession(session);
+    uploadManager_->start();
 
-	CUploadEngineData *ue = servers_[selectedIndex];
-	//CUploadEngineData* newData = new CUploadEngineData();
-	//uploadEngineDataVector.push_back(std_tr::shared_ptr<CUploadEngineData>(newData));
-	//*newData = *ue;
-	CAbstractUploadEngine * e = engineList_->getUploadEngine(ue,Settings.urlShorteningServer.serverSettings());
-	if ( !e ) {
-		ProcessFinished();
-		return false;
-	}
-	e->setUploadData(ue);
-	
-	ServerSettingsStruct& settings = Settings.urlShorteningServer.serverSettings();
-	e->setServerSettings(settings);
-	queueUploader_->AddUploadTask(task, 0, e);
-	queueUploader_->start();
-
-	return true;
+    return true;
 }
 
-bool CShortenUrlDlg::OnFileFinished(bool ok, CFileQueueUploader::FileListItem& result) {
-	if ( ok ) {
-		CString shortUrl = Utf8ToWCstring(result.imageUrl);
-		SetDlgItemText(IDC_RESULTSEDIT, shortUrl);
-		WinUtils::CopyTextToClipboard(shortUrl);
-		SetDlgItemText(IDC_RESULTSLABEL, TR("Короткая ссылка скопирована в буфер обмена!"));
-		::ShowWindow(GetDlgItem(IDC_RESULTSLABEL), SW_SHOW);
-		::SetFocus(GetDlgItem(IDC_RESULTSEDIT));
-	}
-	return true;
+void CShortenUrlDlg::OnFileFinished(UploadTask* task, bool ok) {
+    if ( ok ) {
+        CString shortUrl = Utf8ToWCstring(task->uploadResult()->directUrl);
+        SetDlgItemText(IDC_RESULTSEDIT, shortUrl);
+        WinUtils::CopyTextToClipboard(shortUrl);
+        SetDlgItemText(IDC_RESULTSLABEL, TR("The short link has been copied to the clipboard!"));
+        ::ShowWindow(GetDlgItem(IDC_RESULTSLABEL), SW_SHOW);
+        ::SetFocus(GetDlgItem(IDC_RESULTSEDIT));
+    }
 }
 
-bool CShortenUrlDlg::OnQueueFinished(CFileQueueUploader* queueUploader) {
-	ProcessFinished();
-	return true;
+void CShortenUrlDlg::OnQueueFinished(UploadSession* session) {
+    ProcessFinished();
 }
 
 void CShortenUrlDlg::ProcessFinished() {
-	GuiTools::EnableDialogItem(m_hWnd, IDOK, true);
-	wndAnimation_.ShowWindow(SW_HIDE);
+    GuiTools::EnableDialogItem(m_hWnd, IDOK, true);
+    wndAnimation_.ShowWindow(SW_HIDE);
 }
 
 void CShortenUrlDlg::OnClose() {
-	int selectedIndex = SendDlgItemMessage(IDC_SERVERCOMBOBOX, CB_GETCURSEL, 0, 0);
-	if ( selectedIndex >= 0 ) {
-		CUploadEngineData *ue = servers_[selectedIndex];
-		Settings.urlShorteningServer.setServerName( Utf8ToWCstring(ue->Name));
-	}
+    Settings.urlShorteningServer = urlShortenerServerSelector_->serverProfile();
 }
 
 bool CShortenUrlDlg::ParseBuffer(const CString& text) {
-	CString textCopy = text;
-	if (  WebUtils::DoesTextLookLikeUrl(textCopy) ) {
-		SetDlgItemText(IDC_INPUTEDIT, textCopy);
-	}
-	return false;
+    CString textCopy = text;
+    if (  WebUtils::DoesTextLookLikeUrl(textCopy) ) {
+        SetDlgItemText(IDC_INPUTEDIT, textCopy);
+    }
+    return false;
 }
 
 LRESULT CShortenUrlDlg::OnCtlColorMsgDlg(HDC hdc, HWND hwnd) {
-	if ( hwnd == GetDlgItem(IDC_RESULTSLABEL ) ) {
-		SetTextColor(hdc, RGB(0,180,0));
-		SetBkMode(hdc, TRANSPARENT);
-		return (LRESULT)(HBRUSH) backgroundBrush_; 
-	}
-	return 0;
+    if ( hwnd == GetDlgItem(IDC_RESULTSLABEL ) ) {
+        SetTextColor(hdc, RGB(0,180,0));
+        SetBkMode(hdc, TRANSPARENT);
+        return reinterpret_cast<LRESULT>(static_cast<HBRUSH>(backgroundBrush_)); 
+    }
+    return 0;
 }
 
 bool  CShortenUrlDlg::OnConfigureNetworkClient(CFileQueueUploader* ,NetworkClient* nm) {
-	IU_ConfigureProxy(*nm);
-	return true;
+    CoreFunctions::ConfigureProxy(nm);
+    return true;
 }
 
 

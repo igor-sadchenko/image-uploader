@@ -2,7 +2,7 @@
 
     Image Uploader -  free application for uploading images/files to the Internet
 
-    Copyright 2007-2015 Sergey Svistunov (zenden2k@gmail.com)
+    Copyright 2007-2018 Sergey Svistunov (zenden2k@yandex.ru)
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -23,38 +23,57 @@
 #pragma once
 
 #include "atlheaders.h"
+#include "Core/i18n/Translator.h"
+#include <string>
+#include <unordered_map>
 
-class CLang
+class CLang : public ITranslator
 {
-	public:
-		CLang();
-		~CLang();
-		LPTSTR GetString(LPCTSTR Name);
-		bool SetDirectory(LPCTSTR Directory);
-		bool LoadLanguage(LPCTSTR Lang);
-		CString GetLanguageName();
-		CString getLanguage() const;
-		CString getLocale() const;
-		CString getLanguageFileNameForLocale(const CString& locale);
-	private:
-		struct TranslateListItem
-		{
-			int Hash;
-			TCHAR *Name;
-			TCHAR *Text;
-		};
-		TCHAR m_Directory[MAX_PATH];
-		CString m_sLang;
-		CAtlArray<TranslateListItem> StringList;
-		CAtlArray<CString> LanguagesList;
-		CString locale_;
-		CString language_;
+    public:
+        CLang();
+        ~CLang();
+        LPCTSTR GetString(LPCTSTR Name);
+        bool SetDirectory(LPCTSTR Directory);
+        bool LoadLanguage(LPCTSTR Lang);
+        CString GetLanguageName();
+        CString getLanguage() const;
+        CString getLocale() const;
+        CString getLanguageFileNameForLocale(const CString& locale);
+        virtual std::string getCurrentLanguage() override;
+        virtual std::string getCurrentLocale() override;
+        CLang(const CLang&) = delete;
+        CLang& operator=(const CLang) = delete;
+    private:
+        struct TranslateListItem
+        {
+            TCHAR *Name;
+            TCHAR *Text;
+        };
+        TCHAR m_Directory[MAX_PATH];
+        CString m_sLang;
+        std::unordered_map<int, TranslateListItem> StringList;
+        std::vector<CString> LanguagesList;
+        CString locale_;
+        CString language_;
 };
+#if defined(IU_WTL_APP) || defined(IU_SERVERLISTTOOL) || defined(IU_SHELLEXT)
 extern CLang Lang;
 
+#endif
+
 // Begin: translation macros
+#ifdef IU_TESTS
+#define TR(str) _T(str)
+#else
 #define TR(str) Lang.GetString(_T(str))
+#endif
+
+#ifdef NDEBUG
 #define TRC(c, str) SetDlgItemText(c, Lang.GetString(_T(str)))
+#else
+#define TRC(c, str) (ATLASSERT(GetDlgItem(c)),SetDlgItemText(c, Lang.GetString(_T(str))), (void)0)
+#endif
+#define TR_CONST(str) const_cast<LPWSTR>(TR(str))
 // End
 
 #endif  // LANGCLASS_H

@@ -2,7 +2,7 @@
 
     Image Uploader -  free application for uploading images/files to the Internet
 
-    Copyright 2007-2015 Sergey Svistunov (zenden2k@gmail.com)
+    Copyright 2007-2018 Sergey Svistunov (zenden2k@yandex.ru)
 
     Licensed under the Apache License, Version 2.0 (the "License");
     you may not use this file except in compliance with the License.
@@ -38,22 +38,20 @@
 class CWizardDlg;
 class CWizardPage
 {
-	public:
-		CWizardDlg* WizardDlg;
-		virtual ~CWizardPage() = NULL;
-		HBITMAP HeadBitmap;
-		virtual bool OnShow();
-		virtual bool OnHide();
-		virtual bool OnNext();
-		void EnableNext(bool Enable = true);
-		void EnablePrev(bool Enable = true);
-		void EnableExit(bool Enable = true);
-		void SetNextCaption(LPCTSTR Caption);
-		HWND PageWnd;
-		void ShowNext(bool Show = true);
-		void ShowPrev(bool Show = true);
+    public:
+        CWizardDlg* WizardDlg;
+        virtual ~CWizardPage();
+        HBITMAP HeadBitmap;
+        virtual bool OnShow();
+        virtual bool OnHide();
+        virtual bool OnNext();
+        void EnableNext(bool Enable = true);
+        void EnablePrev(bool Enable = true);
+        void EnableExit(bool Enable = true);
+        void SetNextCaption(LPCTSTR Caption);
+        HWND PageWnd;
+        void ShowNext(bool Show = true);
+        void ShowPrev(bool Show = true);
 };
-
-extern CWizardDlg* pWizardDlg;
 
 #endif // IU_GUI_WIZARDCOMMON_H
